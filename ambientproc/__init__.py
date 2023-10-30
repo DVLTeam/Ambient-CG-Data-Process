@@ -11,3 +11,6 @@ if missing:
     python = sys.executable
     subprocess.check_call([python, "-m", "pip", "install", *missing], stdout=subprocess.DEVNULL)
 
+from .downloads import get_download_csv, download_materials, unzip_datasets
+
+__all__ = ['get_download_csv', 'download_materials', 'unzip_datasets']
