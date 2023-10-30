@@ -71,6 +71,7 @@ def reset_download_history(cfg):
     tf = open(download_history_cache, mode='w')
     tf.close()
 
+
 def download(cfg):
     get_download_csv(cfg)
     download_materials(cfg)
