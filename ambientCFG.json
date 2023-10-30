@@ -1,0 +1,11 @@
+{
+  "root_dir": "./ambient",
+  "header_url": "https://ambientCG.com/api/v2/downloads_csv?type=Material",
+  "csv_cache": "download.csv",
+  "download_format": "4K-PNG",
+  "cache_dir": "cache",
+  "dataset_dir": "dataset",
+  "download_history_cache" : "./download_history_cache.txt"
+
+
+}
