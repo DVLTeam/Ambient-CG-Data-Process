@@ -13,7 +13,10 @@ if missing:
 
 from .downloads import get_download_csv, download_materials, unzip_datasets, download
 from .utilities import load_config
-from .render_utils import get_blender_material, create_scene_with_material, export_scene_as_blend
+from .render_utils import get_blender_material, \
+    create_scene_with_material, export_scene_as_blend, \
+    add_canonical_lighting, add_canonical_camera, \
+    render_image
 
 __all__ = [
     'load_config',
@@ -24,5 +27,8 @@ __all__ = [
 
     'get_blender_material',
     'create_scene_with_material',
-    'export_scene_as_blend'
+    'export_scene_as_blend',
+    'add_canonical_lighting',
+    "add_canonical_camera",
+    'render_image'
 ]

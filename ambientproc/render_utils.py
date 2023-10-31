@@ -43,6 +43,7 @@ def get_blender_material(maps_path):
     # Create Shader nodes and connect them
     shader_node = nodes.new(type='ShaderNodeBsdfPrincipled')
     shader_node.location = (0, 0)
+    shader_node.inputs['Specular'].default_value = 0.0
 
     # ao does not work with principled shader
     # import base color
@@ -54,7 +55,7 @@ def get_blender_material(maps_path):
 
     # import roughness
     if "roughness" in ambient_maps.keys():
-        roughness_node = nodes.new(type='ShaderNodeTexImadisplacement_nodege')
+        roughness_node = nodes.new(type='ShaderNodeTexImage')
         roughness_node.image = bpy.data.images.load(maps_path + "/" + ambient_maps["roughness"])
         roughness_node.location = (-400, 200)
         material.node_tree.links.new(roughness_node.outputs['Color'], shader_node.inputs['Roughness'])
@@ -86,34 +87,42 @@ def get_blender_material(maps_path):
         emission_node.location = (-400, -400)
         material.node_tree.links.new(emission_node.outputs['Color'], shader_node.inputs['Emission'])
 
-    # import opacity
-    if "opacity" in ambient_maps.keys():
-        opacity_node = nodes.new(type='ShaderNodeTexImage')
-        opacity_node.image = bpy.data.images.load(maps_path + "/" + ambient_maps["opacity"])
-        opacity_node.location = (-400, -600)
-        material.node_tree.links.new(opacity_node.outputs['Color'], shader_node.inputs['Alpha'])
+    # # import opacity
+    # if "opacity" in ambient_maps.keys():
+    #     opacity_node = nodes.new(type='ShaderNodeTexImage')
+    #     opacity_node.image = bpy.data.images.load(maps_path + "/" + ambient_maps["opacity"])
+    #     opacity_node.location = (-400, -600)
+    #     material.node_tree.links.new(opacity_node.outputs['Color'], shader_node.inputs['Alpha'])
 
     # create a material output node and link it to the shader node
     output_node = nodes.new(type='ShaderNodeOutputMaterial')
     material.node_tree.links.new(shader_node.outputs['BSDF'], output_node.inputs['Surface'])
 
-    # import displacement
-    if "displacement" in ambient_maps.keys():
-        # add a displacement node
-        disp_node = nodes.new(type='ShaderNodeDisplacement')
-        disp_node.location = (-200, 0)
-        material.node_tree.links.new(disp_node.outputs['Displacement'], output_node.inputs['Displacement'])
+    # # import displacement
+    # if "displacement" in ambient_maps.keys():
+    #     # add a displacement node
+    #     disp_node = nodes.new(type='ShaderNodeDisplacement')
+    #     disp_node.location = (-200, 0)
+    #     material.node_tree.links.new(disp_node.outputs['Displacement'], output_node.inputs['Displacement'])
+    #
+    #     displacement_node = nodes.new(type='ShaderNodeTexImage')
+    #     displacement_node.image = bpy.data.images.load(maps_path + "/" + ambient_maps["displacement"])
+    #     displacement_node.location = (-400, -400)
+    #     material.node_tree.links.new(displacement_node.outputs['Color'], disp_node.inputs['Height'])
+    #
+    #     disp_node.inputs['Scale'].default_value = 0.02
 
-        displacement_node = nodes.new(type='ShaderNodeTexImage')
-        displacement_node.image = bpy.data.images.load(maps_path + "/" + ambient_maps["displacement"])
-        displacement_node.location = (-400, -400)
-        material.node_tree.links.new(displacement_node.outputs['Color'], disp_node.inputs['Height'])
+    # Set displacement method
+    # material.cycles.displacement_method = 'BOTH'
 
     # Return the created material
     return material
 
 # this function generates a canonical 2d surface and a light source from above as a blender scene
 def create_scene_with_material(material):
+    # Enable CUDA
+    bpy.context.preferences.addons['cycles'].preferences.compute_device_type = 'OPTIX'
+
     # Ensure the material parameter is valid
     if not material:
         raise ValueError("Invalid material")
@@ -122,6 +131,7 @@ def create_scene_with_material(material):
 
     # set the scene render engine to cycles
     scene.render.engine = 'CYCLES'
+    scene.cycles.device = 'GPU'
 
     # delete all objects in the scene
     for obj in scene.objects:
@@ -129,7 +139,7 @@ def create_scene_with_material(material):
 
     # Create a mesh object with a single 1m x 1m square face
     mesh = bpy.data.meshes.new(name='SquareMesh')
-    vertices = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
+    vertices = [(-0.5, -0.5, 0), (-0.5, 0.5, 0), (0.5, 0.5, 0), (0.5, -0.5, 0)]
     edges = []
     faces = [(0, 1, 2, 3)]
     mesh.from_pydata(vertices, edges, faces)
@@ -142,6 +152,13 @@ def create_scene_with_material(material):
     # Assign the material to the object
     obj.data.materials.append(material)
 
+    # subsurf_mod = obj.modifiers.new(name="Subsurf", type='SUBSURF')
+    #
+    # # Set the subdivision levels
+    # subsurf_mod.levels = 11
+    # subsurf_mod.render_levels = 11  # Optional: if you want the subdivision to apply in renders as well
+    # subsurf_mod.subdivision_type = 'SIMPLE'
+
     # Set up UV mapping so the material is applied exactly once without repetition
     uv_map = obj.data.uv_layers.new(name="UVMap")
     uv_map.data[0].uv = (0, 0)
@@ -151,6 +168,52 @@ def create_scene_with_material(material):
 
     return scene
 
+# adds a point light source to the scene on the top of the middle of the tile
+def add_canonical_lighting(scene, position=(0,0,0.5), intensity=10, color=(1,1,1)):
+    # Ensure the scene parameter is valid
+    if not scene:
+        raise ValueError("Invalid scene")
+
+    # Create a point light source and link it to the scene
+    light_data = bpy.data.lights.new(name="Light", type='POINT')
+    light_data.energy = intensity
+    light_data.color = color
+    light_object = bpy.data.objects.new(name="Light", object_data=light_data)
+    scene.collection.objects.link(light_object)
+
+    # Position the light source
+    light_object.location = position
+
+    return scene
+
+
+def add_canonical_camera(scene, position=(0,0,10), plane_size=1000, focal_length=10000):
+    # Ensure the scene parameter is valid
+    if not scene:
+        raise ValueError("Invalid scene")
+
+    # Create a camera and link it to the scene
+    camera_data = bpy.data.cameras.new(name="Camera")
+    camera_object = bpy.data.objects.new(name="Camera", object_data=camera_data)
+    scene.collection.objects.link(camera_object)
+
+    # Position the camera
+    camera_object.location = position
+
+    # Set the focal length
+    camera_object.data.lens = focal_length
+
+    # set the sensor size
+    camera_object.data.sensor_width = plane_size
+    camera_object.data.sensor_height = plane_size
+
+    # set resolution
+    scene.render.resolution_x = 4096
+    scene.render.resolution_y = 4096
+
+    scene.camera = camera_object
+
+    return scene
 
 def export_scene_as_blend(scene, file_path):
     # Ensure the scene parameter is valid
@@ -163,4 +226,16 @@ def export_scene_as_blend(scene, file_path):
     # Save the current blend file to the specified file path
     bpy.ops.wm.save_as_mainfile(filepath=file_path)
 
+def render_image(scene, output_path):
+    # Ensure the scene parameter is valid
+    if not scene:
+        raise ValueError("Invalid scene")
 
+    # Set the active scene to the provided scene
+    bpy.context.window.scene = scene
+
+    # Set the output path
+    scene.render.filepath = output_path
+
+    # Render the scene
+    bpy.ops.render.render(write_still=True)
