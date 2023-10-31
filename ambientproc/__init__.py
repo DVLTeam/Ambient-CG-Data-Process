@@ -16,7 +16,7 @@ from .utilities import load_config
 from .render_utils import get_blender_material, \
     create_scene_with_material, export_scene_as_blend, \
     add_canonical_lighting, add_canonical_camera, \
-    render_image
+    render_image, reset_blender
 
 __all__ = [
     'load_config',
@@ -30,5 +30,6 @@ __all__ = [
     'export_scene_as_blend',
     'add_canonical_lighting',
     "add_canonical_camera",
-    'render_image'
+    'render_image',
+    'reset_blender'
 ]

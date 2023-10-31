@@ -4,23 +4,39 @@ import subprocess
 import MaterialX as mx
 
 AMBIENT_NAMINGS = {
-    "ao" : "AmbientOcclusion",
-    "base_color" : "Color",
-    "displacement" : "Displacement",
-    "roughness" : "Roughness",
-    "normal" : "NormalGL",
-    "emission" : "Emission",
-    "metallic" : "Metalness",
-    "opacity" : "Opacity",
+    "ao": "AmbientOcclusion",
+    "base_color": "Color",
+    "displacement": "Displacement",
+    "roughness": "Roughness",
+    "normal": "NormalGL",
+    "emission": "Emission",
+    "metallic": "Metalness",
+    "opacity": "Opacity",
 }
 
-def reset_blender():
+
+def reset_blender(cfg):
     # Set up the scene
     bpy.ops.wm.read_factory_settings(use_empty=True)  # Create a new empty scene
 
+    if cfg["render_use_gpu"]:
+        # Get the Cycles preferences
+        cycles_preferences = bpy.context.preferences.addons['cycles'].preferences
+
+        # Enable CUDA
+        if cfg["render_use_optix"]:
+            cycles_preferences.compute_device_type = 'OPTIX'
+        else:
+            cycles_preferences.compute_device_type = 'CUDA'
+
+        for device in cycles_preferences.devices:
+            if device.type == 'OPTIX' and cfg["render_use_optix"]:
+                device.use = True  # Enable this CUDA device
+            elif device.type == 'CUDA' and not cfg["render_use_optix"]:
+                device.use = True
+
 def get_blender_material(maps_path):
     maps = os.listdir(maps_path)
-
     # read in all png files, and pare them with names in the AMBIENT_NAMINGS dict
     ambient_maps = {}
     for map in maps:
@@ -69,7 +85,6 @@ def get_blender_material(maps_path):
 
     # import normal
     if "normal" in ambient_maps.keys():
-
         # add a normal map node
         normal_map_node = nodes.new(type='ShaderNodeNormalMap')
         normal_map_node.location = (-200, 0)
@@ -98,40 +113,37 @@ def get_blender_material(maps_path):
     output_node = nodes.new(type='ShaderNodeOutputMaterial')
     material.node_tree.links.new(shader_node.outputs['BSDF'], output_node.inputs['Surface'])
 
-    # # import displacement
-    # if "displacement" in ambient_maps.keys():
-    #     # add a displacement node
-    #     disp_node = nodes.new(type='ShaderNodeDisplacement')
-    #     disp_node.location = (-200, 0)
-    #     material.node_tree.links.new(disp_node.outputs['Displacement'], output_node.inputs['Displacement'])
-    #
-    #     displacement_node = nodes.new(type='ShaderNodeTexImage')
-    #     displacement_node.image = bpy.data.images.load(maps_path + "/" + ambient_maps["displacement"])
-    #     displacement_node.location = (-400, -400)
-    #     material.node_tree.links.new(displacement_node.outputs['Color'], disp_node.inputs['Height'])
-    #
-    #     disp_node.inputs['Scale'].default_value = 0.02
+    # import displacement
+    if "displacement" in ambient_maps.keys():
+        # add a displacement node
+        disp_node = nodes.new(type='ShaderNodeDisplacement')
+        disp_node.location = (-200, 0)
+        material.node_tree.links.new(disp_node.outputs['Displacement'], output_node.inputs['Displacement'])
+
+        displacement_node = nodes.new(type='ShaderNodeTexImage')
+        displacement_node.image = bpy.data.images.load(maps_path + "/" + ambient_maps["displacement"])
+        displacement_node.location = (-400, -400)
+        material.node_tree.links.new(displacement_node.outputs['Color'], disp_node.inputs['Height'])
+
+        disp_node.inputs['Scale'].default_value = 0.002
 
     # Set displacement method
-    # material.cycles.displacement_method = 'BOTH'
+    material.cycles.displacement_method = 'BOTH'
 
     # Return the created material
     return material
 
+
 # this function generates a canonical 2d surface and a light source from above as a blender scene
-def create_scene_with_material(material):
-    # Enable CUDA
-    bpy.context.preferences.addons['cycles'].preferences.compute_device_type = 'OPTIX'
-
-    # Ensure the material parameter is valid
-    if not material:
-        raise ValueError("Invalid material")
-
-    scene = bpy.context.scene
+def create_scene_with_material(material, cfg):
 
     # set the scene render engine to cycles
+    scene = bpy.context.scene
     scene.render.engine = 'CYCLES'
-    scene.cycles.device = 'GPU'
+    if cfg["render_use_gpu"]:
+        scene.cycles.device = 'GPU'
+        if cfg["render_use_optix"] and cfg["render_use_denoiser"]:
+            scene.cycles.denoiser = 'OPTIX'
 
     # delete all objects in the scene
     for obj in scene.objects:
@@ -168,8 +180,9 @@ def create_scene_with_material(material):
 
     return scene
 
+
 # adds a point light source to the scene on the top of the middle of the tile
-def add_canonical_lighting(scene, position=(0,0,0.5), intensity=10, color=(1,1,1)):
+def add_canonical_lighting(scene, position=(0, 0, 0.5), intensity=10, color=(1, 1, 1)):
     # Ensure the scene parameter is valid
     if not scene:
         raise ValueError("Invalid scene")
@@ -187,7 +200,7 @@ def add_canonical_lighting(scene, position=(0,0,0.5), intensity=10, color=(1,1,1
     return scene
 
 
-def add_canonical_camera(scene, position=(0,0,10), plane_size=1000, focal_length=10000):
+def add_canonical_camera(scene, position=(0, 0, 10), plane_size=1000, focal_length=10000):
     # Ensure the scene parameter is valid
     if not scene:
         raise ValueError("Invalid scene")
@@ -215,6 +228,7 @@ def add_canonical_camera(scene, position=(0,0,10), plane_size=1000, focal_length
 
     return scene
 
+
 def export_scene_as_blend(scene, file_path):
     # Ensure the scene parameter is valid
     if not scene:
@@ -225,6 +239,7 @@ def export_scene_as_blend(scene, file_path):
 
     # Save the current blend file to the specified file path
     bpy.ops.wm.save_as_mainfile(filepath=file_path)
+
 
 def render_image(scene, output_path):
     # Ensure the scene parameter is valid

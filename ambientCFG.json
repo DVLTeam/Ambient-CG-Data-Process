@@ -6,6 +6,9 @@
   "cache_dir": "cache",
   "dataset_dir": "dataset",
   "download_history_cache" : "downloaded_files.txt",
-  "lmdb_dir": "lmdbs"
+  "lmdb_dir": "lmdbs",
 
+  "render_use_gpu": true,
+  "render_use_optix": true,
+  "render_use_denoiser": true
 }
