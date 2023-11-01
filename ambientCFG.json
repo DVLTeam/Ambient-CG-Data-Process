@@ -10,5 +10,6 @@
 
   "render_use_gpu": true,
   "render_use_optix": true,
-  "render_use_denoiser": true
+  "render_use_denoiser": true,
+  "render_history_cache_canonical": "rendered_files_canon.txt"
 }
