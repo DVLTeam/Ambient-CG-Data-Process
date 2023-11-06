@@ -1,7 +1,6 @@
 import os
 import bpy
 import subprocess
-import MaterialX as mx
 
 AMBIENT_NAMINGS = {
     "ao": "AmbientOcclusion",

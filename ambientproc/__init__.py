@@ -6,17 +6,13 @@ required = {"numpy", "torch", "lmdb", "blender", "MaterialX"}
 installed = {pkg.key for pkg in pkg_resources.working_set}
 missing = required - installed
 
-if missing:
-    print(f"Installing missing packages for ambientcgproc: {missing}")
-    python = sys.executable
-    subprocess.check_call([python, "-m", "pip", "install", *missing], stdout=subprocess.DEVNULL)
-
 
 
 from .downloads import *
 from .utilities import *
 from .render_utils import *
 from .render_textures_canonical import *
+from .pytroch_datasets import *
 
 __all__ = [
     'load_config',
@@ -34,5 +30,8 @@ __all__ = [
     'reset_blender',
 
     'render_all_materials_canonical',
-    'render_specific_material_canonical'
+    'render_specific_material_canonical',
+
+    'AmbientDataset',
+    'AmbientDataConfig'
 ]

@@ -1,4 +1,6 @@
 from ambientproc import *
+import numpy as np
 
 cfg = load_config()
-render_all_materials_canonical(cfg)
+cfg_d = AmbientDataConfig(cfg["root_dir"])
+dataset = AmbientDataset(cfg_d, redo_lmdb=True)

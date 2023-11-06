@@ -14,18 +14,23 @@ def render_all_materials_canonical(cfg):
         rendered_files = []
 
     for directory in tqdm(materials, desc="Rendering Materials"):
-        if os.path.exists(cache_file):
-            if directory in rendered_files:
-                continue
-        reset_blender(cfg)
-        material, size = get_blender_material(os.path.join(cfg["root_dir"], cfg["dataset_dir"], directory))
-        scene = create_scene_with_material(material, size, cfg)
-        scene = add_canonical_lighting(scene)
-        scene = add_canonical_camera(scene, size)
-        render_image(scene, os.path.join(cfg["root_dir"], cfg["dataset_dir"], directory, "canonical_render.png"))
-        print("rendered: " + directory)
-        with open(cache_file, mode='a') as f:
-            f.write(directory + "\n")
+        try:
+            if os.path.exists(cache_file):
+                if directory in rendered_files:
+                    continue
+            reset_blender(cfg)
+            material, size = get_blender_material(os.path.join(cfg["root_dir"], cfg["dataset_dir"], directory))
+            scene = create_scene_with_material(material, size, cfg)
+            scene = add_canonical_lighting(scene)
+            scene = add_canonical_camera(scene, size)
+            render_image(scene, os.path.join(cfg["root_dir"], cfg["dataset_dir"], directory, "canonical_render.png"))
+            print("rendered: " + directory)
+            with open(cache_file, mode='a') as f:
+                f.write(directory + "\n")
+        except Exception as e:
+            print("failed to render: " + directory)
+            print(e)
+            continue
 
 
 def render_specific_material_canonical(cfg, dir_name, output_dir, export_blend=False):
