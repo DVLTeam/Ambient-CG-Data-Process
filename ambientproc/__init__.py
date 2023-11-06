@@ -1,12 +1,5 @@
 import subprocess
 import sys
-import pkg_resources
-
-required = {"numpy", "torch", "lmdb", "blender", "MaterialX"}
-installed = {pkg.key for pkg in pkg_resources.working_set}
-missing = required - installed
-
-
 
 from .downloads import *
 from .utilities import *
