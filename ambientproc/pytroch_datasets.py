@@ -71,7 +71,7 @@ class AmbientDataConfig:
 
 
 class AmbientDataset(data.Dataset):
-    def __init__(self, cfg: AmbientDataConfig, redo_lmdb=False):
+    def __init__(self, cfg: AmbientDataConfig, redo_lmdb=False, post_transform=None):
         super(AmbientDataset, self).__init__()
 
         self.cfg = cfg
@@ -92,6 +92,8 @@ class AmbientDataset(data.Dataset):
 
         print("Dataset initialized with {} samples".format(len(self.raw_keys)))
 
+        self.post_transform = post_transform
+
     def __len__(self):
         len(self.raw_keys) * self.cfg.generate_data_per_sample
 
@@ -102,6 +104,10 @@ class AmbientDataset(data.Dataset):
             for pair in self.cfg.fetch_pairs:
                 if pair[0] in self.cfg.use_rendered_types and pair[1] in self.cfg.use_data_types:
                        sample[pair] = self.fetch_data_pair(key, txn, pair[0], pair[1])
+                       if self.post_transform is not None:
+                            sample_0 = self.post_transform(sample[pair][0])
+                            sample_1 = self.post_transform(sample[pair][1])
+                            sample[pair] = (sample_0, sample_1)
 
         return sample
 
