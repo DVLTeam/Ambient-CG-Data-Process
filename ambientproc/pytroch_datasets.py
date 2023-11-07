@@ -54,7 +54,7 @@ class AmbientDataset(data.Dataset):
         self.post_transform = post_transform
 
     def __len__(self):
-        return len(self.raw_keys) * self.cfg.generate_data_per_sample
+        return len(self.raw_keys)
 
     def __getitem__(self, index):
         key = self.raw_keys[index]
