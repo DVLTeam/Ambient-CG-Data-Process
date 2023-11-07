@@ -22,6 +22,8 @@ class AmbientDataConfig:
     def __init__(self, cfg):
         self.lmdb_dir = os.path.join(cfg["root_dir"], cfg["lmdb_dir"])
         self.lmdb_name = cfg["lmdb_name"]
+        self.cache_dir = os.path.join(cfg["root_dir"], cfg["cache_dir"])
+        self.dataset_dir = os.path.join(cfg["root_dir"], cfg["dataset_dir"])
         self.generate_data_per_sample = cfg["generate_data_per_sample"]
         self.fetch_pairs = [(pair[0], pair[1]) for pair in cfg["fetch_pairs"]]
         self.use_rendered_types = cfg["use_rendered_types"]
@@ -197,13 +199,18 @@ class AmbientDataset(data.Dataset):
     def fetch_data_pair(self, key, txn, modality1, modality2):
         """
         fetches the data from the lmdb
+        :param modality2:
+        :param modality1:
         :param key: key to fetch
         :param txn: lmdb transaction
         :return: dictionary of data
         """
-        print("reading")
         data = pickle.loads(txn.get(key))
-        print("done reading")
+        if modality1 not in data.keys():
+            raise ValueError("Modality {} not in data".format(modality1))
 
-        return data[modality1], data[modality2]
+        if modality2 not in data.keys():
+            data[modality2] = np.zeros((render_utils.AMBIENT_CHANNELS[modality2],
+                     self.cfg.resolution[0], self.cfg.resolution[1]), dtype=np.uint8)
 
+        return torch.tensor(data[modality1], dtype=torch.float32), torch.tensor(data[modality2],  dtype=torch.float32)

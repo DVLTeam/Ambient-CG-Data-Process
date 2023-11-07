@@ -13,6 +13,17 @@ AMBIENT_NAMINGS = {
     "opacity": "Opacity",
 }
 
+AMBIENT_CHANNELS = {
+    "ao": 1,
+    "base_color": 3,
+    "displacement": 1,
+    "roughness": 1,
+    "normal": 3,
+    "emission": 3,
+    "metallic": 1,
+    "opacity": 1,
+}
+
 
 def reset_blender(cfg):
     # Set up the scene
