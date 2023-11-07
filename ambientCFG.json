@@ -6,10 +6,25 @@
   "cache_dir": "cache",
   "dataset_dir": "dataset",
   "download_history_cache" : "downloaded_files.txt",
-  "lmdb_dir": "lmdbs",
+  "lmdb_dir": "lmdb",
 
   "render_use_gpu": true,
   "render_use_optix": true,
   "render_use_denoiser": true,
-  "render_history_cache_canonical": "rendered_files_canon.txt"
+  "render_history_cache_canonical": "rendered_files_canon.txt",
+
+  "resolution": [1024, 1024],
+  "fitting_method": "RANDOM_CORP",
+  "generate_data_per_sample": 3,
+  "lmdb_name": "canonical_lmdb",
+  "use_rendered_types": ["canonical_render"],
+  "use_data_types": ["displacement", "roughness", "normal", "base_color", "metallic"],
+  "fetch_pairs": [
+    ["canonical_render", "displacement"],
+    ["canonical_render", "roughness"],
+    ["canonical_render", "normal"],
+    ["canonical_render", "base_color"],
+    ["canonical_render", "metallic"]
+  ]
+
 }

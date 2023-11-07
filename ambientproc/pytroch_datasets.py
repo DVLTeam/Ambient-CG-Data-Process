@@ -19,56 +19,15 @@ from . import render_utils
 
 class AmbientDataConfig:
 
-    def __init__(self, root_dir,
-                 dataset_dir_appendix="dataset",
-                 lmdb_dir_appendix="lmdb",
-                 resolution=(1024, 1024),
-                 fitting_method="RANDOM_CORP",
-                 generate_data_per_sample=3,
-                 lmdb_name="canonical_lmdb",
-                 use_rendered_types=None,
-                 use_data_types=None,
-                 fetch_pairs=None):
-        """
-        :param root_dir:                    str, the root directory of the dataset
-        :param dataset_dir_appendix:        str, the subdirectory of the dataset (where the directories of the materials are)
-        :param lmdb_dir_appendix:           str, the directory of the lmdb files
-        :param resolution:                  tuple, the resolution of the images, (x, y)
-        :param fitting_method:              str, the method of fitting the material to the plane
-                                            CHOICES: ["RANDOM_CORP", "CENTER_CROP", "RANDOM_RESIZE" , "RESIZE"]
-        :param generate_data_per_sample:    int, the number of images to generate per material (Should be 1 for "CENTER_CROP" and "RESIZE")
-        :param lmdb_name:                   str, the name of the lmdb file for this dataset instance
-        :param use_rendered_types:          list, the types of rendered images to use
-        :param use_data_types:              list, the types of data to use
-                                            CHOICES : ["displacement", "roughness", "normal", "base_color", "metallic","opacity","emission", "ao"]
-        """
-
-        if fetch_pairs is None:
-            fetch_pairs = [
-                ("canonical_render", "displacement"),
-                ("canonical_render", "roughness"),
-                ("canonical_render", "normal"),
-                ("canonical_render", "base_color"),
-                ("canonical_render", "metallic"),
-            ]
-
-        if use_rendered_types is None:
-            use_rendered_types = ["canonical_render"]
-
-        if use_data_types is None:
-            use_data_types = ["displacement", "roughness", "normal", "base_color", "metallic"]
-
-        self.root_dir = root_dir
-        self.dataset_dir = os.path.join(root_dir, dataset_dir_appendix)
-        self.lmdb_dir = os.path.join(root_dir, lmdb_dir_appendix)
-        self.resolution = resolution
-        self.fitting_method = fitting_method
-        self.generate_data_per_sample = generate_data_per_sample
-        self.lmdb_name = lmdb_name
-        self.use_rendered_types = use_rendered_types
-        self.use_data_types = use_data_types
-        self.fetch_pairs = fetch_pairs
-
+    def __init__(self, cfg):
+        self.lmdb_dir = os.path.join(cfg["root_dir"], cfg["lmdb_dir"])
+        self.lmdb_name = cfg["lmdb_name"]
+        self.generate_data_per_sample = cfg["generate_data_per_sample"]
+        self.fetch_pairs = [(pair[0], pair[1]) for pair in cfg["fetch_pairs"]]
+        self.use_rendered_types = cfg["use_rendered_types"]
+        self.use_data_types = cfg["use_data_types"]
+        self.fitting_method = cfg["fitting_method"]
+        self.resolution = cfg["resolution"]
 
 class AmbientDataset(data.Dataset):
     def __init__(self, cfg: AmbientDataConfig, redo_lmdb=False, post_transform=None):
